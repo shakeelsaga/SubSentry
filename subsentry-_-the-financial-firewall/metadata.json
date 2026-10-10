@@ -1,0 +1,6 @@
+{
+  "name": "SubSentry | The Financial Firewall",
+  "description": "The financial firewall for your subscriptions. Generate merchant-locked virtual cards that obey your rules, not their billing cycles.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
