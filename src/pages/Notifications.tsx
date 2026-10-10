@@ -1,9 +1,9 @@
-import { 
-  Bell, 
-  ShieldCheck, 
-  ShieldAlert, 
-  Flame, 
-  AlertTriangle, 
+import {
+  Bell,
+  ShieldCheck,
+  ShieldAlert,
+  Flame,
+  AlertTriangle,
   CreditCard,
   CheckCheck,
   Eye,
@@ -15,33 +15,33 @@ import { useState, useEffect } from 'react';
 import { Notification } from '../types';
 
 const typeConfig: Record<string, { icon: typeof Bell; color: string; bgColor: string; borderColor: string }> = {
-  charge_approved: { 
-    icon: ShieldCheck, 
-    color: 'text-primary-container', 
+  charge_approved: {
+    icon: ShieldCheck,
+    color: 'text-primary-container',
     bgColor: 'bg-primary-container/10',
     borderColor: 'border-primary-container/20'
   },
-  charge_blocked: { 
-    icon: ShieldAlert, 
-    color: 'text-error', 
+  charge_blocked: {
+    icon: ShieldAlert,
+    color: 'text-error',
     bgColor: 'bg-error-container/10',
     borderColor: 'border-error/20'
   },
-  spend_alert: { 
-    icon: AlertTriangle, 
-    color: 'text-[#FACC15]', 
+  spend_alert: {
+    icon: AlertTriangle,
+    color: 'text-[#FACC15]',
     bgColor: 'bg-[#FACC15]/10',
     borderColor: 'border-[#FACC15]/20'
   },
-  burn_executed: { 
-    icon: Flame, 
-    color: 'text-secondary-container', 
+  burn_executed: {
+    icon: Flame,
+    color: 'text-secondary-container',
     bgColor: 'bg-secondary-container/10',
     borderColor: 'border-secondary-container/20'
   },
-  card_expired: { 
-    icon: CreditCard, 
-    color: 'text-error', 
+  card_expired: {
+    icon: CreditCard,
+    color: 'text-error',
     bgColor: 'bg-error-container/10',
     borderColor: 'border-error/20'
   },
@@ -70,7 +70,7 @@ export default function Notifications() {
     fetchNotifications();
   }, [filter]);
 
-  const handleMarkRead = async (id: number) => {
+  const handleMarkRead = async (id: string | number) => {
     try {
       await api.markNotificationRead(id);
       fetchNotifications();
@@ -100,10 +100,10 @@ export default function Notifications() {
             Real-time security notifications for all authorization events, spend alerts, and identity lifecycle changes.
           </p>
         </div>
-        
+
         <div className="flex gap-3 items-center">
           {unreadCount > 0 && (
-            <button 
+            <button
               onClick={handleMarkAllRead}
               className="flex items-center gap-2 bg-surface-container border border-outline/30 px-5 py-2.5 rounded-xl font-display font-black text-[10px] uppercase tracking-widest text-on-surface hover:bg-surface-variant transition-all"
             >
@@ -116,13 +116,13 @@ export default function Notifications() {
               { id: 'all', label: 'All Alerts' },
               { id: 'unread', label: `Unread${unreadCount > 0 ? ` (${unreadCount})` : ''}` },
             ].map((f) => (
-              <button 
+              <button
                 key={f.id}
                 onClick={() => setFilter(f.id as 'all' | 'unread')}
                 className={cn(
                   "px-5 py-2.5 rounded-xl font-display text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border",
-                  filter === f.id 
-                    ? "bg-primary-container text-neutral-950 border-primary-container shadow-[0_0_15px_rgba(195,244,0,0.15)]" 
+                  filter === f.id
+                    ? "bg-primary-container text-neutral-950 border-primary-container shadow-[0_0_15px_rgba(195,244,0,0.15)]"
                     : "bg-surface-container border-outline/30 text-on-surface-variant hover:border-primary-container/30"
                 )}
               >

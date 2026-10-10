@@ -15,10 +15,10 @@
   --color-surface-container: #1f1f26;
   --color-surface-container-high: #2a2930;
   --color-surface-container-highest: #35343b;
-  
+
   --color-on-surface: #e4e1ea;
   --color-on-surface-variant: #c4c9ac;
-  
+
   --color-primary: #ffffff;
   --color-primary-container: #c3f400;
   --color-on-primary-container: #556d00;
@@ -31,7 +31,7 @@
   --color-tertiary: #ffffff;
   --color-tertiary-container: #e1e0ff;
   --color-tertiary-fixed-dim: #c0c1ff;
-  
+
   --color-error: #ffb4ab;
   --color-error-container: #93000a;
   --color-on-error-container: #ffdad6;
@@ -61,7 +61,7 @@
   .glow-pink {
     box-shadow: 0 0 25px rgba(255, 75, 137, 0.2);
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
@@ -69,4 +69,68 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .glass-card-hover {
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .glass-card-hover:hover {
+    border-color: rgba(195, 244, 0, 0.35);
+    box-shadow: 0 10px 30px -10px rgba(195, 244, 0, 0.15);
+  }
+
+  .neon-glow-primary {
+    box-shadow: 0 0 20px rgba(195, 244, 0, 0.25);
+  }
+  .neon-glow-primary:hover {
+    box-shadow: 0 0 35px rgba(195, 244, 0, 0.45);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 15px rgba(195, 244, 0, 0.5);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(0.8deg); }
+}
+
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(200%); }
+}
+
+.animate-scan {
+  animation: scan 4s linear infinite;
+}
+
+@keyframes ticker {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+.ticker-wrap {
+  width: 100%;
+  overflow: hidden;
+}
+
+.ticker {
+  display: inline-block;
+  white-space: nowrap;
+  animation: ticker 32s linear infinite;
+}
+
+.ticker:hover {
+  animation-play-state: paused;
+}
+
+.mesh-gradient-landing {
+  background-image:
+    radial-gradient(at 0% 0%, rgba(195, 244, 0, 0.06) 0, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(255, 75, 137, 0.04) 0, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(99, 102, 241, 0.05) 0, transparent 50%);
 }

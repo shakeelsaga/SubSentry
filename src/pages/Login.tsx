@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
-import { Shield, ArrowRight, Github } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, Shield } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function Login({ onLogin }: { onLogin: () => void }) {
@@ -31,13 +32,22 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6 relative overflow-hidden">
+        <Link
+          to="/"
+          aria-label="Back to SubSentry home"
+          className="group absolute top-6 left-6 z-20 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-on-surface-variant shadow-[0_0_18px_rgba(0,0,0,0.16)] transition-all hover:border-primary-container/40 hover:bg-primary-container/10 hover:text-primary-container"
+        >
+          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+          <span className="font-display text-[10px] font-black uppercase tracking-[0.18em]">Back to home</span>
+        </Link>
+
         {/* Background Gradients */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary-container/10 blur-[120px] rounded-full" />
             <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-secondary-container/10 blur-[120px] rounded-full" />
         </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="glass-card w-full max-w-md p-10 rounded-3xl relative z-10 border-white/5 shadow-2xl"
@@ -60,8 +70,8 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
           {isRegister && (
             <div className="space-y-2">
               <label className="font-display font-black text-[10px] text-on-surface-variant uppercase tracking-widest ml-1">Full Name</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-primary-container focus:bg-white/10 transition-all font-display"
@@ -71,8 +81,8 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
           )}
           <div className="space-y-2">
             <label className="font-display font-black text-[10px] text-on-surface-variant uppercase tracking-widest ml-1">Email Address</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-primary-container focus:bg-white/10 transition-all font-display"
@@ -81,8 +91,8 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
           </div>
           <div className="space-y-2">
             <label className="font-display font-black text-[10px] text-on-surface-variant uppercase tracking-widest ml-1">Password</label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-primary-container focus:bg-white/10 transition-all font-display"
@@ -90,8 +100,8 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             />
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             className="w-full bg-primary-container text-neutral-950 font-display font-black uppercase text-sm py-5 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(195,244,0,0.15)] flex items-center justify-center gap-2 group"
           >
@@ -101,7 +111,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
         </form>
 
         <div className="mt-8 flex flex-col items-center gap-4">
-            <button 
+            <button
                 type="button"
                 onClick={() => setIsRegister(!isRegister)}
                 className="text-on-surface-variant hover:text-white transition-colors text-xs font-display font-bold uppercase tracking-widest"

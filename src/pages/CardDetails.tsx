@@ -1,11 +1,11 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  PauseCircle, 
-  Ban, 
-  RefreshCw, 
-  Receipt, 
-  Lock, 
+import {
+  ArrowLeft,
+  PauseCircle,
+  Ban,
+  RefreshCw,
+  Receipt,
+  Lock,
   MoreHorizontal,
   Film,
   Filter,
@@ -98,8 +98,8 @@ export default function CardDetails() {
   return (
     <div className="flex flex-col gap-10">
       {/* Breadcrumb / Back */}
-      <Link 
-        to="/cards" 
+      <Link
+        to="/cards"
         className="flex items-center gap-2 text-on-surface-variant hover:text-white transition-colors w-fit group"
       >
         <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
@@ -112,16 +112,16 @@ export default function CardDetails() {
           {/* Card Vis */}
           <div className="relative w-full aspect-[1.586/1] rounded-[2.5rem] overflow-hidden shadow-3xl border border-white/10 group">
             <div className="absolute inset-0 bg-neutral-900 z-0" />
-            
+
             {/* Background Texture Placeholder */}
-            <div 
-              className="absolute inset-0 opacity-80 mix-blend-overlay z-10" 
-              style={{ 
+            <div
+              className="absolute inset-0 opacity-80 mix-blend-overlay z-10"
+              style={{
                 background: `linear-gradient(135deg, ${card.color || '#6366f1'} 0%, #000 120%)`,
                 backgroundSize: 'cover'
-              }} 
+              }}
             />
-            
+
             <div className="relative z-30 h-full p-10 flex flex-col justify-between">
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-5">
@@ -178,7 +178,7 @@ export default function CardDetails() {
             <div className="glass-card rounded-[2.5rem] p-10 flex flex-col gap-6">
               <h3 className="text-sm font-black font-display text-on-surface-variant uppercase tracking-[0.3em]">Lifecycle Management</h3>
               <div className="grid grid-cols-2 gap-6">
-                <button 
+                <button
                   onClick={handleToggleStatus}
                   className="flex flex-col items-center justify-center gap-4 p-8 rounded-[2rem] bg-surface-container border border-white/5 hover:border-primary-container/40 hover:bg-surface-variant transition-all group"
                 >
@@ -194,7 +194,7 @@ export default function CardDetails() {
                     </>
                   )}
                 </button>
-                <button 
+                <button
                   onClick={handleRevoke}
                   className="flex flex-col items-center justify-center gap-4 p-8 rounded-[2rem] bg-error-container/10 border border-error-container/20 hover:bg-error-container/20 hover:border-error transition-all group"
                 >
@@ -218,14 +218,14 @@ export default function CardDetails() {
               </div>
             </div>
             <div className="h-4 w-full bg-surface-container-highest rounded-full overflow-hidden border border-white/5 relative shadow-inner">
-              <motion.div 
+              <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: hasSpendLimit ? `${Math.min(progress, 100)}%` : '0%' }}
                 transition={{ duration: 1.5, ease: "easeOut" }}
                 className={cn(
                     "absolute top-0 left-0 h-full rounded-full shadow-2xl transition-all",
                     progress > 90 ? "bg-error" : "bg-gradient-to-r from-secondary-container to-secondary shadow-[0_0_20px_rgba(255,75,137,0.5)]"
-                )} 
+                )}
               />
             </div>
             <div className="flex justify-between font-display text-[11px] font-black text-on-surface-variant uppercase tracking-widest">
@@ -320,11 +320,11 @@ export default function CardDetails() {
                 <MoreHorizontal className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="flex flex-col flex-grow overflow-y-auto">
               {transactions.map((tx, idx) => (
-                <div 
-                  key={tx.id} 
+                <div
+                  key={tx.id}
                   className={cn(
                     "p-6 flex items-center justify-between hover:bg-white/[0.03] transition-all group cursor-pointer border-b border-white/5 last:border-0",
                     tx.status !== 'approved' && "bg-error-container/[0.03]"
@@ -355,7 +355,7 @@ export default function CardDetails() {
                   </div>
                 </div>
               ))}
-              
+
               {transactions.length === 0 && (
                 <div className="flex-1 flex flex-col items-center justify-center p-20 opacity-30 text-center grayscale">
                     <Receipt className="w-16 h-16 mb-4" />

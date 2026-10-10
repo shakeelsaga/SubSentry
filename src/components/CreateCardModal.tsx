@@ -43,15 +43,15 @@ export default function CreateCardModal({ onClose, onCreate }: CreateCardModalPr
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
         className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md"
       />
-      
-      <motion.div 
+
+      <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -60,7 +60,7 @@ export default function CreateCardModal({ onClose, onCreate }: CreateCardModalPr
       >
         {/* Header Decor */}
         <div className="absolute top-0 right-0 w-48 h-48 bg-primary-container/10 blur-[60px] rounded-full pointer-events-none" />
-        
+
         <div className="p-8 md:p-10">
           <div className="flex justify-between items-start mb-8">
             <div className="flex items-center gap-4">
@@ -84,7 +84,7 @@ export default function CreateCardModal({ onClose, onCreate }: CreateCardModalPr
                 Merchant Destination *
               </label>
               <input
-                type="text" 
+                type="text"
                 placeholder="e.g. Netflix, Adobe, Spotify"
                 value={form.merchant_name}
                 onChange={e => setForm({...form, merchant_name: e.target.value})}
@@ -106,8 +106,8 @@ export default function CreateCardModal({ onClose, onCreate }: CreateCardModalPr
                     onClick={() => setForm({...form, merchant_category: c.value})}
                     className={`
                       flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all
-                      ${form.merchant_category === c.value 
-                        ? 'bg-primary-container/10 border-primary-container/40 text-white' 
+                      ${form.merchant_category === c.value
+                        ? 'bg-primary-container/10 border-primary-container/40 text-white'
                         : 'bg-white/5 border-white/5 text-on-surface-variant hover:border-white/20 hover:text-white'}
                     `}
                   >
@@ -125,9 +125,9 @@ export default function CreateCardModal({ onClose, onCreate }: CreateCardModalPr
                   Resource Limit
                 </label>
                 <input
-                  type="number" 
-                  placeholder="0.00 (Optional)" 
-                  min="0" 
+                  type="number"
+                  placeholder="0.00 (Optional)"
+                  min="0"
                   step="0.01"
                   value={form.spend_limit}
                   onChange={e => setForm({...form, spend_limit: e.target.value})}
@@ -154,15 +154,15 @@ export default function CreateCardModal({ onClose, onCreate }: CreateCardModalPr
             </div>
 
             <div className="flex gap-4 mt-4">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="flex-1 py-4 rounded-2xl bg-white/5 text-on-surface-variant font-display font-black uppercase tracking-widest text-xs border border-white/5 hover:bg-white/10 hover:text-white transition-all"
                 onClick={onClose}
               >
                 Abort
               </button>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={loading || !form.merchant_name.trim()}
                 className="flex-[2] py-4 rounded-2xl bg-primary-container text-neutral-950 font-display font-black uppercase tracking-widest text-xs shadow-[0_0_20px_rgba(195,244,0,0.15)] hover:brightness-110 transition-all disabled:opacity-50"
               >

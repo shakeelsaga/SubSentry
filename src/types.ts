@@ -6,7 +6,7 @@ export interface Transaction {
   amount: number;
   status: 'approved' | 'blocked' | 'limit_exceeded';
   card_number?: string;
-  card_id?: number;
+  card_id?: string | number;
   reason?: string;
 }
 
@@ -30,7 +30,7 @@ export interface VirtualCard {
 }
 
 export interface User {
-  id: number;
+  id: string | number;
   full_name: string;
   email: string;
   main_balance: number;
@@ -38,12 +38,12 @@ export interface User {
 }
 
 export interface Notification {
-  id: number;
-  user_id: number;
+  id: string | number;
+  user_id: string | number;
   type: 'charge_approved' | 'charge_blocked' | 'spend_alert' | 'burn_executed' | 'card_expired';
   title: string;
   message: string;
-  related_card_id: number | null;
-  is_read: number; // 0 or 1 (SQLite boolean)
+  related_card_id: string | number | null;
+  is_read: number;
   created_at: string;
 }

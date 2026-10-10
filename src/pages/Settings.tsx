@@ -1,8 +1,8 @@
-import { 
-  User as UserIcon, 
-  Shield, 
-  Bell, 
-  Lock, 
+import {
+  User as UserIcon,
+  Shield,
+  Bell,
+  Lock,
   Palette,
   Mail,
   Calendar,
@@ -80,25 +80,25 @@ export default function Settings() {
       </div>
 
       {/* Profile Card */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="glass-card rounded-[2.5rem] p-10 relative overflow-hidden"
       >
         <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary-container/10 blur-[100px] rounded-full pointer-events-none" />
-        
+
         <div className="flex items-start gap-8 relative z-10">
           <div className="w-20 h-20 rounded-2xl border border-white/10 overflow-hidden shrink-0 bg-surface-container shadow-2xl">
-            <img 
-              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || 'User')}&background=c3f400&color=000&size=128`} 
-              alt="Profile" 
+            <img
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || 'User')}&background=c3f400&color=000&size=128`}
+              alt="Profile"
               className="w-full h-full object-cover"
             />
           </div>
           <div className="flex-1">
             <h2 className="text-2xl font-black font-display text-white uppercase italic tracking-tighter">{user?.full_name || 'Operator'}</h2>
             <p className="text-[10px] font-black text-primary-container uppercase tracking-[0.3em] mt-1">Elite Member</p>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8">
               <div className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-on-surface-variant" />
@@ -136,7 +136,7 @@ export default function Settings() {
       {/* Settings Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Security Section */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -180,7 +180,7 @@ export default function Settings() {
         </motion.div>
 
         {/* Notifications Preferences */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -208,7 +208,7 @@ export default function Settings() {
                   <p className="font-display font-black text-xs text-white uppercase tracking-widest">{pref.label}</p>
                   <p className="text-[10px] text-on-surface-variant mt-0.5">{pref.desc}</p>
                 </div>
-                <div 
+                <div
                   onClick={() => toggleNotifPref(pref.label)}
                   className={cn(
                   "w-12 h-7 rounded-full relative transition-all cursor-pointer",
@@ -225,7 +225,7 @@ export default function Settings() {
         </motion.div>
 
         {/* Appearance */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
@@ -262,7 +262,7 @@ export default function Settings() {
         </motion.div>
 
         {/* About */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}

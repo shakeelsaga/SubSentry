@@ -115,7 +115,7 @@ class ApiService {
     const searchParams = new URLSearchParams();
     if (params?.status) searchParams.append('status', params.status);
     if (params?.card_id) searchParams.append('card_id', params.card_id);
-    
+
     const queryString = searchParams.toString();
     if (queryString) url += `?${queryString}`;
 
@@ -167,7 +167,7 @@ class ApiService {
     return data;
   }
 
-  async markNotificationRead(id: number): Promise<void> {
+  async markNotificationRead(id: string | number): Promise<void> {
     const res = await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
       method: 'PATCH',
       headers: this.getHeaders(),

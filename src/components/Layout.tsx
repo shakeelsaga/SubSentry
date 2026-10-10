@@ -1,9 +1,9 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  CreditCard, 
-  Terminal, 
-  ReceiptText, 
+import {
+  LayoutDashboard,
+  CreditCard,
+  Terminal,
+  ReceiptText,
   Settings,
   Search,
   Bell,
@@ -25,7 +25,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: CreditCard, label: 'Virtual Cards', path: '/cards' },
   { icon: Terminal, label: 'Merchant Simulator', path: '/simulator' },
   { icon: ReceiptText, label: 'Transactions', path: '/transactions' },
@@ -61,7 +61,7 @@ export default function Layout({ children, onLogout }: { children: React.ReactNo
     const handleBalanceChange = () => {
       setShowBalance(localStorage.getItem('subsentry_show_balance') !== 'false');
     };
-    
+
     window.addEventListener('balanceVisibilityChanged', handleBalanceChange);
     window.addEventListener('transaction_completed', fetchUserData);
 
@@ -89,8 +89,8 @@ export default function Layout({ children, onLogout }: { children: React.ReactNo
               to={item.path}
               className={({ isActive }) => cn(
                 "flex items-center gap-4 px-4 py-3 rounded-lg font-display font-medium transition-all duration-200 group relative",
-                isActive 
-                  ? "bg-primary-container text-neutral-950 shadow-[0_0_15px_rgba(204,255,0,0.4)] translate-x-1" 
+                isActive
+                  ? "bg-primary-container text-neutral-950 shadow-[0_0_15px_rgba(204,255,0,0.4)] translate-x-1"
                   : "text-neutral-500 hover:text-primary-container hover:bg-white/5"
               )}
             >
@@ -103,8 +103,8 @@ export default function Layout({ children, onLogout }: { children: React.ReactNo
               )}
             </NavLink>
           ))}
-          
-          <button 
+
+          <button
             onClick={onLogout}
             className="flex items-center gap-4 px-4 py-3 rounded-lg font-display font-medium text-neutral-500 hover:text-error hover:bg-error-container/10 transition-all mt-auto group"
           >
@@ -116,7 +116,7 @@ export default function Layout({ children, onLogout }: { children: React.ReactNo
 
       {/* Sidebar Mobile Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -128,7 +128,9 @@ export default function Layout({ children, onLogout }: { children: React.ReactNo
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-6 flex justify-between items-center">
-          <h1 className="text-xl font-black text-primary-container italic font-display">SubSentry</h1>
+          <Link to="/" onClick={() => setIsSidebarOpen(false)}>
+            <h1 className="text-xl font-black text-primary-container italic font-display">SubSentry</h1>
+          </Link>
           <button onClick={() => setIsSidebarOpen(false)}>
             <X className="w-6 h-6 text-neutral-400" />
           </button>
@@ -141,8 +143,8 @@ export default function Layout({ children, onLogout }: { children: React.ReactNo
               onClick={() => setIsSidebarOpen(false)}
               className={({ isActive }) => cn(
                 "flex items-center gap-4 px-4 py-3 rounded-lg font-display font-medium transition-all relative",
-                isActive 
-                  ? "bg-primary-container text-neutral-950 shadow-[0_0_15px_rgba(204,255,0,0.4)]" 
+                isActive
+                  ? "bg-primary-container text-neutral-950 shadow-[0_0_15px_rgba(204,255,0,0.4)]"
                   : "text-neutral-500"
               )}
             >
@@ -155,7 +157,7 @@ export default function Layout({ children, onLogout }: { children: React.ReactNo
               )}
             </NavLink>
           ))}
-          <button 
+          <button
             onClick={onLogout}
             className="flex items-center gap-4 px-4 py-3 rounded-lg font-display font-medium text-neutral-500 mt-auto"
           >
@@ -176,8 +178,8 @@ export default function Layout({ children, onLogout }: { children: React.ReactNo
           <div className="hidden md:flex flex-1 items-center max-w-md ml-4">
             <div className="relative w-full group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 group-focus-within:text-primary-container transition-colors" />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Search everything..."
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && e.currentTarget.value.trim()) {
@@ -202,7 +204,7 @@ export default function Layout({ children, onLogout }: { children: React.ReactNo
                   </button>
                 </div>
             </div>
-            
+
             <Link to="/notifications" className="text-neutral-400 hover:text-primary-container hover:bg-white/5 p-2 rounded-full relative transition-colors">
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
@@ -217,9 +219,9 @@ export default function Layout({ children, onLogout }: { children: React.ReactNo
                 <p className="text-[10px] font-black text-primary-container uppercase tracking-widest">Elite Member</p>
               </div>
               <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shrink-0 hover:border-primary-container transition-colors">
-                <img 
-                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || 'User')}&background=c3f400&color=000`} 
-                  alt="Profile" 
+                <img
+                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || 'User')}&background=c3f400&color=000`}
+                  alt="Profile"
                   className="w-full h-full object-cover"
                 />
               </div>

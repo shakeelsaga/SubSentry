@@ -9,7 +9,7 @@ import CreateCardModal from '../components/CreateCardModal';
 export default function Cards() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
-  
+
   const [cards, setCards] = useState<VirtualCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
@@ -53,8 +53,8 @@ export default function Cards() {
   const filteredCards = useMemo(() => {
     if (!searchQuery) return cards;
     const lowerQuery = searchQuery.toLowerCase();
-    return cards.filter(c => 
-      c.merchant_name.toLowerCase().includes(lowerQuery) || 
+    return cards.filter(c =>
+      c.merchant_name.toLowerCase().includes(lowerQuery) ||
       c.merchant_category.toLowerCase().includes(lowerQuery) ||
       c.card_number.includes(lowerQuery) ||
       c.status.toLowerCase() === lowerQuery ||
@@ -74,7 +74,7 @@ export default function Cards() {
             Provision and manage single-purpose digital payment tokens with granular limit control.
           </p>
         </div>
-        <button 
+        <button
           onClick={() => setShowCreateModal(true)}
           className="flex items-center gap-3 bg-primary-container text-neutral-950 px-8 py-4 rounded-xl font-display font-black uppercase text-sm tracking-widest shadow-[0_0_30px_rgba(195,244,0,0.2)] hover:scale-105 active:scale-95 transition-all group"
         >
@@ -91,13 +91,13 @@ export default function Cards() {
           { label: 'Revoked', count: cards.filter(c => c.status === 'revoked').length, color: 'text-error' },
           { label: 'Burn Limit', count: cards.filter(c => c.spend_limit).length, color: 'text-secondary-container' },
         ].map((stat) => (
-          <button 
-            key={stat.label} 
+          <button
+            key={stat.label}
             onClick={() => setSearchQuery(searchQuery === stat.label.toLowerCase() ? '' : stat.label.toLowerCase())}
             className={cn(
               "glass-card p-4 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer",
-              searchQuery === stat.label.toLowerCase() 
-                ? "bg-white/10 border-white/20 scale-105 shadow-lg" 
+              searchQuery === stat.label.toLowerCase()
+                ? "bg-white/10 border-white/20 scale-105 shadow-lg"
                 : "border-white/5 bg-white/[0.02] hover:bg-white/[0.05]"
             )}
           >
@@ -111,8 +111,8 @@ export default function Cards() {
       <div className="flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 group w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 group-focus-within:text-primary-container transition-colors" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Search by merchant, category, or card number..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -131,14 +131,14 @@ export default function Cards() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredCards.map((card) => (
           <Link to={`/cards/${card.id}`} key={card.id}>
-            <motion.div 
+            <motion.div
               whileHover={{ y: -8, scale: 1.02 }}
               className="group relative h-64 overflow-hidden rounded-[2.5rem] p-8 flex flex-col justify-between shadow-2xl cursor-pointer"
               style={{ background: `linear-gradient(135deg, ${card.color || '#6366f1'} 0%, #000 120%)` }}
             >
               {/* Card Texture Overlay */}
               <div className="absolute inset-0 opacity-20 mix-blend-overlay" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-              
+
               <div className="flex justify-between items-start relative z-10">
                 <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
                   <CreditCard className="w-6 h-6 text-white" />
@@ -183,7 +183,7 @@ export default function Cards() {
       {/* Create Modal */}
       <AnimatePresence>
         {showCreateModal && (
-          <CreateCardModal 
+          <CreateCardModal
             onClose={() => setShowCreateModal(false)}
             onCreate={handleCreateCard}
           />

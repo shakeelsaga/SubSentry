@@ -1,43 +1,67 @@
 import express from 'express';
+import { ObjectId } from 'mongodb';
 import { getDb } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
+function sanitizeTransaction(tx) {
+    if (!tx) return tx;
+    const { _id, user_id, card_id, ...rest } = tx;
+    return { id: _id.toString(), user_id: user_id.toString(), card_id: card_id.toString(), ...rest };
+}
+
 // GET /api/transactions — list all user transactions (paginated)
-router.get('/', authenticate, (req, res) => {
+router.get('/', authenticate, async (req, res) => {
     try {
         const db = getDb();
         const { status, card_id, limit = 50, offset = 0 } = req.query;
 
-        let query = 'SELECT t.*, vc.card_number, vc.merchant_category FROM transactions t JOIN virtual_cards vc ON t.card_id = vc.id WHERE t.user_id = ?';
-        const params = [req.user.id];
+        const matchStage = { user_id: new ObjectId(req.user.id) };
 
         if (card_id) {
-            query += ' AND t.card_id = ?';
-            params.push(parseInt(card_id));
+            matchStage.card_id = new ObjectId(card_id);
         }
 
         if (status && ['approved', 'blocked', 'limit_exceeded'].includes(status)) {
-            query += ' AND t.status = ?';
-            params.push(status);
+            matchStage.status = status;
         }
 
-        query += ' ORDER BY t.created_at DESC LIMIT ? OFFSET ?';
-        params.push(parseInt(limit), parseInt(offset));
+        const limitNum = parseInt(limit, 10);
+        const offsetNum = parseInt(offset, 10);
 
-        const transactions = db.prepare(query).all(...params);
+        const pipeline = [
+            { $match: matchStage },
+            { $sort: { created_at: -1 } },
+            { $skip: offsetNum },
+            { $limit: limitNum },
+            {
+                $lookup: {
+                    from: 'virtual_cards',
+                    localField: 'card_id',
+                    foreignField: '_id',
+                    as: 'card'
+                }
+            },
+            { $unwind: '$card' },
+            {
+                $addFields: {
+                    card_number: '$card.card_number',
+                    merchant_category: '$card.merchant_category'
+                }
+            },
+            { $project: { card: 0 } }
+        ];
 
-        // Get total count for pagination
-        let countQuery = 'SELECT COUNT(*) as total FROM transactions WHERE user_id = ?';
-        const countParams = [req.user.id];
-        if (status && ['approved', 'blocked', 'limit_exceeded'].includes(status)) {
-            countQuery += ' AND status = ?';
-            countParams.push(status);
-        }
-        const { total } = db.prepare(countQuery).get(...countParams);
+        const transactions = await db.collection('transactions').aggregate(pipeline).toArray();
+        const total = await db.collection('transactions').countDocuments(matchStage);
 
-        res.json({ transactions, total, limit: parseInt(limit), offset: parseInt(offset) });
+        res.json({
+            transactions: transactions.map(sanitizeTransaction),
+            total,
+            limit: limitNum,
+            offset: offsetNum
+        });
     } catch (err) {
         console.error('[Transactions] List error:', err);
         res.status(500).json({ error: 'Internal server error' });
@@ -45,9 +69,9 @@ router.get('/', authenticate, (req, res) => {
 });
 
 // POST /api/transactions/simulate — Mock Checkout (merchant charge simulation)
-router.post('/simulate', (req, res) => {
+router.post('/simulate', async (req, res) => {
     try {
-        const { card_number, amount } = req.body;
+        const { card_number, amount, merchant_name } = req.body;
 
         if (!card_number || !amount) {
             return res.status(400).json({ error: 'Card number and amount are required' });
@@ -60,8 +84,8 @@ router.post('/simulate', (req, res) => {
 
         const db = getDb();
 
-        // Look up the card (no auth needed — this simulates an external merchant)
-        const card = db.prepare('SELECT * FROM virtual_cards WHERE card_number = ?').get(card_number.replace(/\s/g, ''));
+        // Look up the card. This route is public to mimic an external merchant authorization request.
+        const card = await db.collection('virtual_cards').findOne({ card_number: card_number.replace(/\s/g, '') });
 
         if (!card) {
             return res.status(404).json({
@@ -71,7 +95,7 @@ router.post('/simulate', (req, res) => {
             });
         }
 
-        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(card.user_id);
+        const user = await db.collection('users').findOne({ _id: card.user_id });
 
         if (!user) {
              return res.status(404).json({
@@ -84,56 +108,88 @@ router.post('/simulate', (req, res) => {
         // Evaluate transaction
         let txStatus, reason, notificationType, notificationTitle, notificationMessage;
 
-        if (card.status === 'paused') {
+        const requestedMerchant = typeof merchant_name === 'string' ? merchant_name.trim() : '';
+        const normalizedRequestedMerchant = requestedMerchant.toLowerCase();
+        const normalizedLockedMerchant = card.merchant_name.toLowerCase();
+
+        const transactionMerchant = requestedMerchant || card.merchant_name;
+
+        if (requestedMerchant && normalizedRequestedMerchant !== normalizedLockedMerchant) {
+            txStatus = 'blocked';
+            reason = `Unauthorized merchant origin: ${requestedMerchant}. Card is locked to ${card.merchant_name}`;
+            notificationType = 'charge_blocked';
+            notificationTitle = 'Merchant Lock Blocked Charge';
+            notificationMessage = `A charge of ₹${chargeAmount.toFixed(2)} from ${requestedMerchant} was blocked because this card is locked to ${card.merchant_name}.`;
+        } else if (card.status === 'paused') {
             txStatus = 'blocked';
             reason = 'Card is frozen/paused by cardholder';
             notificationType = 'charge_blocked';
             notificationTitle = 'Charge Blocked';
-            notificationMessage = `A charge of $${chargeAmount.toFixed(2)} from ${card.merchant_name} was blocked. Your card is paused.`;
+            notificationMessage = `A charge of ₹${chargeAmount.toFixed(2)} from ${transactionMerchant} was blocked. Your card is paused.`;
         } else if (card.status === 'revoked') {
             txStatus = 'blocked';
             reason = 'Card has been permanently revoked by cardholder';
             notificationType = 'charge_blocked';
             notificationTitle = 'Charge Blocked';
-            notificationMessage = `A charge of $${chargeAmount.toFixed(2)} from ${card.merchant_name} was blocked. This card has been revoked.`;
+            notificationMessage = `A charge of ₹${chargeAmount.toFixed(2)} from ${transactionMerchant} was blocked. This card has been revoked.`;
         } else if (card.spend_limit && (card.spent_total + chargeAmount) > card.spend_limit) {
             txStatus = 'limit_exceeded';
-            reason = `Spend limit exceeded ($${card.spent_total.toFixed(2)} spent of $${card.spend_limit.toFixed(2)} limit)`;
+            reason = `Spend limit exceeded (₹${card.spent_total.toFixed(2)} spent of ₹${card.spend_limit.toFixed(2)} limit)`;
             notificationType = 'spend_alert';
             notificationTitle = 'Spend Limit Reached';
-            notificationMessage = `A charge of $${chargeAmount.toFixed(2)} from ${card.merchant_name} was blocked because it exceeds your spend limit of $${card.spend_limit.toFixed(2)}.`;
+            notificationMessage = `A charge of ₹${chargeAmount.toFixed(2)} from ${transactionMerchant} was blocked because it exceeds your spend limit of ₹${card.spend_limit.toFixed(2)}.`;
         } else if (user.main_balance < chargeAmount) {
             txStatus = 'blocked';
             reason = 'Insufficient funds in main balance';
             notificationType = 'charge_blocked';
             notificationTitle = 'Charge Blocked';
-            notificationMessage = `A charge of $${chargeAmount.toFixed(2)} from ${card.merchant_name} was blocked due to insufficient funds.`;
+            notificationMessage = `A charge of ₹${chargeAmount.toFixed(2)} from ${transactionMerchant} was blocked due to insufficient funds.`;
         } else {
             // APPROVED
             txStatus = 'approved';
             reason = null;
             notificationType = 'charge_approved';
             notificationTitle = 'Charge Approved';
-            notificationMessage = `A charge of $${chargeAmount.toFixed(2)} from ${card.merchant_name} was approved.`;
+            notificationMessage = `A charge of ₹${chargeAmount.toFixed(2)} from ${card.merchant_name} was approved.`;
 
             // Deduct from main balance and increment spent_total
-            db.prepare('UPDATE users SET main_balance = main_balance - ? WHERE id = ?').run(chargeAmount, user.id);
-            db.prepare('UPDATE virtual_cards SET spent_total = spent_total + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(chargeAmount, card.id);
+            await db.collection('users').updateOne(
+                { _id: user._id },
+                { $inc: { main_balance: -chargeAmount } }
+            );
+            await db.collection('virtual_cards').updateOne(
+                { _id: card._id },
+                {
+                    $inc: { spent_total: chargeAmount },
+                    $set: { updated_at: new Date().toISOString() }
+                }
+            );
         }
 
         // Log transaction
-        const txResult = db.prepare(`
-            INSERT INTO transactions (card_id, user_id, merchant_name, amount, status, reason)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `).run(card.id, user.id, card.merchant_name, chargeAmount, txStatus, reason);
+        const newTx = {
+            card_id: card._id,
+            user_id: user._id,
+            merchant_name: transactionMerchant,
+            amount: chargeAmount,
+            status: txStatus,
+            reason: reason,
+            created_at: new Date().toISOString()
+        };
+        const txResult = await db.collection('transactions').insertOne(newTx);
 
         // Create notification
-        db.prepare(`
-            INSERT INTO notifications (user_id, type, title, message, related_card_id)
-            VALUES (?, ?, ?, ?, ?)
-        `).run(user.id, notificationType, notificationTitle, notificationMessage, card.id);
+        await db.collection('notifications').insertOne({
+            user_id: user._id,
+            type: notificationType,
+            title: notificationTitle,
+            message: notificationMessage,
+            related_card_id: card._id.toString(),
+            is_read: 0,
+            created_at: new Date().toISOString()
+        });
 
-        const transaction = db.prepare('SELECT * FROM transactions WHERE id = ?').get(txResult.lastInsertRowid);
+        const transaction = await db.collection('transactions').findOne({ _id: txResult.insertedId });
 
         const resultLabel = txStatus === 'approved' ? 'APPROVED' : 'DECLINED';
 
@@ -141,13 +197,14 @@ router.post('/simulate', (req, res) => {
             result: resultLabel,
             status: txStatus,
             reason: reason || 'Transaction approved',
-            transaction,
+            transaction: sanitizeTransaction(transaction),
             merchant_name: card.merchant_name,
+            requested_merchant_name: requestedMerchant || card.merchant_name,
             amount: chargeAmount,
             card_status: card.status,
             message: txStatus === 'approved'
-                ? `✅ Charge of $${chargeAmount.toFixed(2)} approved for ${card.merchant_name}`
-                : `🛡️ Charge of $${chargeAmount.toFixed(2)} blocked for ${card.merchant_name}: ${reason}`,
+                ? `Charge of ₹${chargeAmount.toFixed(2)} approved for ${card.merchant_name}`
+                : `Charge of ₹${chargeAmount.toFixed(2)} blocked for ${transactionMerchant}: ${reason}`,
         });
     } catch (err) {
         console.error('[Transactions] Simulate error:', err);

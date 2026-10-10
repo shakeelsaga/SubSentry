@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
-import { getDb } from "./server/db/database.js";
+import { connectDb, getDb } from "./server/db/database.js";
 
 // Routes
 import authRoutes from "./server/routes/auth.js";
@@ -17,10 +17,10 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT || 3001);
 
   // Initialize DB
-  getDb();
+  await connectDb();
 
   app.use(cors());
   app.use(express.json());
@@ -37,27 +37,30 @@ async function startServer() {
   });
 
   // Burn-date enforcement
-  function enforceBurnDates() {
+  async function enforceBurnDates() {
     try {
       const db = getDb();
-      const expired = db.prepare(`
-        SELECT * FROM virtual_cards 
-        WHERE burn_date IS NOT NULL 
-        AND burn_date <= datetime('now') 
-        AND status != 'revoked'
-      `).all();
+      const now = new Date();
+      const expired = await db.collection('virtual_cards').find({
+        burn_date: { $ne: null, $lte: now.toISOString() }, // Depending on how it's stored, maybe just now
+        status: { $ne: 'revoked' }
+      }).toArray();
 
       for (const card of expired) {
-        db.prepare('UPDATE virtual_cards SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run('revoked', card.id);
-        db.prepare(`
-          INSERT INTO notifications (user_id, type, title, message, related_card_id)
-          VALUES (?, 'burn_executed', 'Card Auto-Revoked', ?, ?)
-        `).run(
-          card.user_id,
-          `Your virtual card for ${card.merchant_name} was automatically revoked — burn date reached.`,
-          card.id
+        await db.collection('virtual_cards').updateOne(
+          { _id: card._id },
+          { $set: { status: 'revoked', updated_at: new Date().toISOString() } }
         );
-        console.log(`[Burn] Auto-revoked card ${card.id} for ${card.merchant_name}`);
+        await db.collection('notifications').insertOne({
+          user_id: card.user_id,
+          type: 'burn_executed',
+          title: 'Card Auto-Revoked',
+          message: `Your virtual card for ${card.merchant_name} was automatically revoked because the burn date was reached.`,
+          related_card_id: card._id.toString(),
+          is_read: 0,
+          created_at: new Date().toISOString()
+        });
+        console.log(`[Burn] Auto-revoked card ${card._id} for ${card.merchant_name}`);
       }
     } catch (err) {
       console.error('[Burn] Error enforcing burn dates:', err);

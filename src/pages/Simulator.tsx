@@ -14,7 +14,7 @@ export default function Simulator() {
   ]);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [responseDetails, setResponseDetails] = useState<any>(null);
-  
+
   const terminalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,16 +37,16 @@ export default function Simulator() {
     setStatus('idle');
     setResponseDetails(null);
     setLogs([`> INIT REQ: M-ID ${merchantName.toUpperCase()}-TX-SANDBOX`]);
-    
+
     await delay(600);
     addLog(`> MTI: 0100 (Authorization Request)`);
     await delay(400);
     addLog(`> PAN: **** **** **** ${cardNumber.slice(-4)}`);
     await delay(300);
-    addLog(`> AMT: ${amount} USD`);
+    addLog(`> AMT: ₹${amount}`);
     await delay(800);
     addLog(`> AWAITING NETWORK RESPONSE...`);
-    
+
     try {
         const response = await api.simulateCharge({
             card_number: cardNumber,
@@ -55,7 +55,7 @@ export default function Simulator() {
         });
 
         await delay(1200);
-        
+
         window.dispatchEvent(new Event('transaction_completed'));
 
         if (response.status === 'approved') {
@@ -66,7 +66,7 @@ export default function Simulator() {
         } else {
             addLog(`> HTTP/2 403 FORBIDDEN`);
             addLog(`> RC: 62 (Restricted Card)`);
-            addLog(`> REASON: ${response.decline_reason || 'UNKNOWN_REJECTION'}`);
+            addLog(`> REASON: ${response.reason || 'UNKNOWN_REJECTION'}`);
             setStatus('error');
         }
         setResponseDetails(response);
@@ -102,7 +102,7 @@ export default function Simulator() {
           <div className="glass-card rounded-[2.5rem] p-8 md:p-10 flex flex-col gap-10 h-full shadow-3xl relative group overflow-hidden border-t border-l border-white/10">
             {/* Ambient Bloom */}
             <div className="absolute -top-24 -left-24 w-64 h-64 bg-primary-container/10 blur-[100px] rounded-full pointer-events-none group-hover:bg-primary-container/20 transition-all duration-1000" />
-            
+
             <div className="flex items-center justify-between relative z-10">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary-container/10 flex items-center justify-center border border-primary-container/20 shadow-inner">
@@ -118,8 +118,8 @@ export default function Simulator() {
               <div className="flex flex-col gap-3">
                 <label className="font-display font-black text-[10px] text-on-surface-variant uppercase tracking-[0.25em] pl-1">Card Payload (PAN)</label>
                 <div className="relative group/input">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
                     className="w-full bg-surface-dim/50 border-0 border-b border-surface-variant py-5 px-4 font-mono text-xl text-white focus:ring-0 focus:border-primary-container focus:bg-surface-container transition-all tracking-[0.2em]"
@@ -137,19 +137,19 @@ export default function Simulator() {
                   <label className="font-display font-black text-[10px] text-on-surface-variant uppercase tracking-[0.25em] pl-1">Charge Value</label>
                   <div className="relative focus-within:text-primary-container transition-colors">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 font-display font-bold text-lg opacity-50">₹</span>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       className="w-full bg-surface-dim/50 border-0 border-b border-surface-variant py-5 pl-10 pr-4 font-mono text-xl text-white focus:ring-0 focus:border-primary-container focus:bg-surface-container transition-all"
                     />
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col gap-3">
                   <label className="font-display font-black text-[10px] text-on-surface-variant uppercase tracking-[0.25em] pl-1">Merchant Origin</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={merchantName}
                     onChange={(e) => setMerchantName(e.target.value)}
                     className="w-full bg-surface-dim/50 border-0 border-b border-surface-variant py-5 px-4 font-display font-bold text-sm text-white focus:ring-0 focus:border-primary-container focus:bg-surface-container transition-all"
@@ -158,7 +158,7 @@ export default function Simulator() {
                 </div>
               </div>
 
-              <button 
+              <button
                 onClick={processTransaction}
                 disabled={isProcessing}
                 className="mt-6 w-full relative group/btn overflow-hidden rounded-2xl bg-primary-container text-neutral-950 font-display font-black text-lg py-6 transition-all shadow-[0_0_25px_rgba(195,244,0,0.1)] hover:shadow-[0_0_40px_rgba(195,244,0,0.3)] hover:-translate-y-1 disabled:opacity-50 disabled:translate-y-0 uppercase italic"
@@ -179,7 +179,7 @@ export default function Simulator() {
             <TerminalIcon className="w-4 h-4 text-primary-container" />
             <h4 className="font-display font-black text-[10px] text-on-surface-variant uppercase tracking-[0.25em]">Response Telemetry</h4>
           </div>
-          
+
           <div className="bg-[#0a0a0e] rounded-[2rem] border border-white/5 p-8 shadow-3xl relative overflow-hidden flex flex-col h-full min-h-[500px]">
              {/* Header Dots */}
              <div className="flex gap-2 mb-8">
@@ -199,7 +199,7 @@ export default function Simulator() {
 
               <AnimatePresence>
                 {status === 'error' && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     className="mt-6 border-l-2 border-error-container pl-5 py-4 bg-error-container/5 rounded-r-lg"
@@ -210,14 +210,14 @@ export default function Simulator() {
                     </div>
                     <div className="grid grid-cols-1 gap-1 text-[12px] font-mono text-on-error-container opacity-80">
                       <div><span className="opacity-40">RC:</span> 62 (Restricted Identity)</div>
-                      <div><span className="opacity-40">RSN:</span> {responseDetails?.decline_reason || 'SECURITY_REJECTION'}</div>
+                      <div><span className="opacity-40">RSN:</span> {responseDetails?.reason || 'SECURITY_REJECTION'}</div>
                       <div><span className="opacity-40">ACT:</span> Dropped. Zero drainage.</div>
                     </div>
                   </motion.div>
                 )}
-                
+
                 {status === 'success' && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     className="mt-6 border-l-2 border-primary-container pl-5 py-4 bg-primary-container/5 rounded-r-lg"
@@ -229,7 +229,7 @@ export default function Simulator() {
                     <div className="grid grid-cols-1 gap-1 text-[12px] font-mono text-on-primary-container opacity-80">
                       <div><span className="opacity-40">RC:</span> 00 (Settlement Ready)</div>
                       <div><span className="opacity-40">AUTH:</span> {Math.floor(Math.random() * 900000) + 100000}</div>
-                      <div><span className="opacity-40">CAPT:</span> {amount} USD committed.</div>
+                      <div><span className="opacity-40">CAPT:</span> ₹{amount} committed.</div>
                     </div>
                   </motion.div>
                 )}
@@ -246,7 +246,7 @@ export default function Simulator() {
           </div>
         </div>
       </div>
-      
+
       <style>{`
         @keyframes shimmer {
           0% { transform: translateX(-100%); }

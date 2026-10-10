@@ -1,9 +1,15 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
+import { ObjectId } from 'mongodb';
 import { getDb } from '../db/database.js';
 import { authenticate, generateToken } from '../middleware/auth.js';
 
 const router = express.Router();
+
+function sanitizeUser(user) {
+    const { _id, password_hash, ...rest } = user;
+    return { id: _id.toString(), ...rest };
+}
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
@@ -26,25 +32,31 @@ router.post('/register', async (req, res) => {
         const db = getDb();
 
         // Check if email already exists
-        const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase());
+        const existing = await db.collection('users').findOne({ email: email.toLowerCase() });
         if (existing) {
             return res.status(409).json({ error: 'An account with this email already exists' });
         }
 
         const password_hash = await bcrypt.hash(password, 12);
 
-        const result = db.prepare(
-            'INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)'
-        ).run(full_name.trim(), email.toLowerCase().trim(), password_hash);
+        const newUser = {
+            full_name: full_name.trim(),
+            email: email.toLowerCase().trim(),
+            password_hash,
+            main_balance: 10000.00, // Starting simulated balance
+            created_at: new Date().toISOString()
+        };
 
-        const user = db.prepare('SELECT id, full_name, email, main_balance, created_at FROM users WHERE id = ?').get(result.lastInsertRowid);
+        const result = await db.collection('users').insertOne(newUser);
+        const user = await db.collection('users').findOne({ _id: result.insertedId });
 
-        const token = generateToken(user);
+        const safeUser = sanitizeUser(user);
+        const token = generateToken(safeUser);
 
         res.status(201).json({
             message: 'Account created successfully',
             token,
-            user,
+            user: safeUser,
         });
     } catch (err) {
         console.error('[Auth] Register error:', err);
@@ -62,7 +74,7 @@ router.post('/login', async (req, res) => {
         }
 
         const db = getDb();
-        const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase().trim());
+        const user = await db.collection('users').findOne({ email: email.toLowerCase().trim() });
 
         if (!user) {
             return res.status(401).json({ error: 'Invalid email or password' });
@@ -73,10 +85,8 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-        const token = generateToken(user);
-
-        // Don't send password hash to client
-        const { password_hash, ...safeUser } = user;
+        const safeUser = sanitizeUser(user);
+        const token = generateToken(safeUser);
 
         res.json({
             message: 'Login successful',
@@ -90,16 +100,16 @@ router.post('/login', async (req, res) => {
 });
 
 // GET /api/auth/me
-router.get('/me', authenticate, (req, res) => {
+router.get('/me', authenticate, async (req, res) => {
     try {
         const db = getDb();
-        const user = db.prepare('SELECT id, full_name, email, main_balance, created_at FROM users WHERE id = ?').get(req.user.id);
+        const user = await db.collection('users').findOne({ _id: new ObjectId(req.user.id) });
 
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        res.json({ user });
+        res.json({ user: sanitizeUser(user) });
     } catch (err) {
         console.error('[Auth] Me error:', err);
         res.status(500).json({ error: 'Internal server error' });

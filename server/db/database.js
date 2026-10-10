@@ -1,29 +1,32 @@
-import Database from 'better-sqlite3';
-import fs from 'fs';
-import path from 'path';
+import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
+dotenv.config();
 
-const DB_PATH = path.join(process.cwd(), 'server', 'db', 'subsentry.db');
-const SCHEMA_PATH = path.join(process.cwd(), 'server', 'db', 'schema.sql');
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/subsentry';
 
 let db;
+let client;
+
+export async function connectDb() {
+    if (!db) {
+        client = new MongoClient(MONGODB_URI);
+        await client.connect();
+        db = client.db(); // uses db name from URI
+
+        // Create indexes for performance
+        await db.collection('users').createIndex({ email: 1 }, { unique: true });
+        await db.collection('virtual_cards').createIndex({ user_id: 1 });
+        await db.collection('virtual_cards').createIndex({ card_number: 1 }, { unique: true });
+        await db.collection('transactions').createIndex({ user_id: 1 });
+        await db.collection('transactions').createIndex({ card_id: 1 });
+        await db.collection('notifications').createIndex({ user_id: 1 });
+
+        console.log('[DB] Connected to MongoDB');
+    }
+    return db;
+}
 
 export function getDb() {
-    if (!db) {
-        // Ensure directory exists
-        const dbDir = path.dirname(DB_PATH);
-        if (!fs.existsSync(dbDir)) {
-            fs.mkdirSync(dbDir, { recursive: true });
-        }
-
-        db = new Database(DB_PATH);
-        db.pragma('journal_mode = WAL');
-        db.pragma('foreign_keys = ON');
-
-        // Initialize schema
-        const schema = fs.readFileSync(SCHEMA_PATH, 'utf-8');
-        db.exec(schema);
-
-        console.log('[DB] SQLite database initialized at', DB_PATH);
-    }
+    if (!db) throw new Error('Database not initialized. Call connectDb() first.');
     return db;
 }

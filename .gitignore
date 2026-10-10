@@ -1,9 +1,12 @@
 node_modules/
 build/
 dist/
+apps/landing/.next/
 coverage/
 .DS_Store
 *.log
 *.db
+*.db-shm
+*.db-wal
 .env*
 !.env.example

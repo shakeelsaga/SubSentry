@@ -64,7 +64,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex gap-4">
-          <Link 
+          <Link
             to="/cards"
             className="flex items-center gap-2 bg-primary-container text-neutral-950 hover:brightness-110 transition-all px-6 py-3 rounded-xl font-display font-bold text-sm shadow-[0_0_20px_rgba(195,244,0,0.15)] group uppercase tracking-widest"
           >
@@ -79,7 +79,7 @@ export default function Dashboard() {
         {/* Main Chart Card */}
         <div className="glass-card rounded-3xl p-8 lg:col-span-8 flex flex-col justify-between relative overflow-hidden group">
           <div className="absolute -top-20 -right-20 w-64 h-64 bg-secondary-container/10 blur-[80px] rounded-full pointer-events-none transition-opacity group-hover:opacity-100 opacity-50" />
-          
+
           <div className="flex justify-between items-start relative z-10">
             <div>
               <p className="text-[10px] font-display font-black text-on-surface-variant uppercase tracking-[0.25em]">Total Capital Drainage</p>
@@ -104,10 +104,10 @@ export default function Dashboard() {
                 </defs>
                 <XAxis dataKey="name" hide />
                 <YAxis hide />
-                <Tooltip 
-                  contentStyle={{ 
-                    background: '#131319', 
-                    border: '1px solid rgba(255,255,255,0.1)', 
+                <Tooltip
+                  contentStyle={{
+                    background: '#131319',
+                    border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: '12px',
                     fontFamily: 'Space Grotesk',
                     fontSize: '12px',
@@ -115,13 +115,13 @@ export default function Dashboard() {
                   }}
                   formatter={(value: number) => [`₹${value.toFixed(2)}`, 'Spent']}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#ff4b89" 
-                  strokeWidth={3} 
-                  fillOpacity={1} 
-                  fill="url(#colorValue)" 
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#ff4b89"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorValue)"
                   animationDuration={2000}
                 />
               </AreaChart>
@@ -132,7 +132,7 @@ export default function Dashboard() {
         {/* Side Stat Card */}
         <div className="glass-card rounded-3xl p-8 lg:col-span-4 flex flex-col justify-between relative overflow-hidden group">
           <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary-container/20 blur-[60px] rounded-full pointer-events-none" />
-          
+
           <div>
             <div className="w-12 h-12 rounded-2xl bg-primary-container/10 border border-primary-container/30 flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(195,244,0,0.1)]">
               <Shield className="w-6 h-6 text-primary-container" fill="currentColor" fillOpacity={0.2} />
@@ -140,7 +140,7 @@ export default function Dashboard() {
             <p className="text-[10px] font-display font-black text-on-surface-variant uppercase tracking-[0.25em]">Capital Secured</p>
             <h3 className="text-4xl font-bold font-display text-primary-container glow-lime mt-2">₹{summary?.total_blocked?.toFixed(2) || '0.00'}</h3>
           </div>
-          
+
           <p className="text-sm text-on-surface-variant leading-relaxed font-medium">
             Intercepted {summary?.blocked_count || 0} unauthorized merchant attempts in this deployment.
           </p>
@@ -164,11 +164,11 @@ export default function Dashboard() {
                 to={`/cards/${card.id}`}
                 key={card.id}
               >
-                <motion.div 
+                <motion.div
                   whileHover={{ x: 4 }}
                   className="flex items-center gap-4 bg-surface-container-highest/20 p-4 rounded-2xl border border-white/5 hover:border-white/10 transition-colors cursor-pointer group"
                 >
-                  <div 
+                  <div
                     className="w-12 h-8 rounded shrink-0 flex flex-col justify-between p-1.5 shadow-inner relative overflow-hidden"
                     style={{ background: `linear-gradient(135deg, ${card.color || '#6366f1'} 0%, #000 150%)` }}
                   >
@@ -204,8 +204,8 @@ export default function Dashboard() {
                 <div className="flex items-center gap-4">
                   <div className={cn(
                     "w-11 h-11 rounded-2xl flex items-center justify-center border transition-all",
-                    tx.status === 'approved' 
-                      ? "bg-surface-container-high border-white/10 group-hover:border-primary-container/40" 
+                    tx.status === 'approved'
+                      ? "bg-surface-container-high border-white/10 group-hover:border-primary-container/40"
                       : "bg-error-container/10 border-error/20"
                   )}>
                     {tx.merchant_category === 'streaming' && <Film className="w-5 h-5 text-on-surface-variant" />}

@@ -1,4 +1,5 @@
 import express from 'express';
+import { ObjectId } from 'mongodb';
 import { getDb } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
 
@@ -6,74 +7,74 @@ const router = express.Router();
 router.use(authenticate);
 
 // GET /api/analytics/summary — dashboard stats
-router.get('/summary', (req, res) => {
+router.get('/summary', async (req, res) => {
     try {
         const db = getDb();
-        const userId = req.user.id;
+        const userId = new ObjectId(req.user.id);
 
-        // Active cards count
-        const active_cards_row = db.prepare(
-            'SELECT COUNT(*) as active_cards FROM virtual_cards WHERE user_id = ? AND status = ?'
-        ).get(userId, 'active');
-        const active_cards = active_cards_row ? active_cards_row.active_cards : 0;
+        const [
+            active_cards,
+            total_cards,
+            paused_cards,
+            revoked_cards,
+            unread_count
+        ] = await Promise.all([
+            db.collection('virtual_cards').countDocuments({ user_id: userId, status: 'active' }),
+            db.collection('virtual_cards').countDocuments({ user_id: userId }),
+            db.collection('virtual_cards').countDocuments({ user_id: userId, status: 'paused' }),
+            db.collection('virtual_cards').countDocuments({ user_id: userId, status: 'revoked' }),
+            db.collection('notifications').countDocuments({ user_id: userId, is_read: 0 })
+        ]);
 
-        // Total cards
-        const total_cards_row = db.prepare(
-            'SELECT COUNT(*) as total_cards FROM virtual_cards WHERE user_id = ?'
-        ).get(userId);
-        const total_cards = total_cards_row ? total_cards_row.total_cards : 0;
+        const spendAgg = await db.collection('transactions').aggregate([
+            { $match: { user_id: userId } },
+            { $group: {
+                _id: null,
+                total_spent: { $sum: { $cond: [{ $eq: ['$status', 'approved'] }, '$amount', 0] } },
+                total_blocked: { $sum: { $cond: [{ $in: ['$status', ['blocked', 'limit_exceeded']] }, '$amount', 0] } },
+                blocked_count: { $sum: { $cond: [{ $in: ['$status', ['blocked', 'limit_exceeded']] }, 1, 0] } }
+            }}
+        ]).toArray();
 
-        // Paused cards
-        const paused_cards_row = db.prepare(
-            'SELECT COUNT(*) as paused_cards FROM virtual_cards WHERE user_id = ? AND status = ?'
-        ).get(userId, 'paused');
-        const paused_cards = paused_cards_row ? paused_cards_row.paused_cards : 0;
+        const spendStats = spendAgg[0] || { total_spent: 0, total_blocked: 0, blocked_count: 0 };
 
-        // Revoked cards
-        const revoked_cards_row = db.prepare(
-            'SELECT COUNT(*) as revoked_cards FROM virtual_cards WHERE user_id = ? AND status = ?'
-        ).get(userId, 'revoked');
-        const revoked_cards = revoked_cards_row ? revoked_cards_row.revoked_cards : 0;
+        // Monthly estimate
+        const estimateAgg = await db.collection('virtual_cards').aggregate([
+            { $match: { user_id: userId, status: 'active' } },
+            {
+                $lookup: {
+                    from: 'transactions',
+                    localField: '_id',
+                    foreignField: 'card_id',
+                    pipeline: [
+                        { $match: { status: 'approved' } },
+                        { $sort: { created_at: -1 } },
+                        { $limit: 1 }
+                    ],
+                    as: 'last_tx'
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    monthly_estimate: { $sum: { $ifNull: [{ $arrayElemAt: ['$last_tx.amount', 0] }, 0] } }
+                }
+            }
+        ]).toArray();
 
-        // Total spent (approved transactions)
-        const spentRow = db.prepare(
-            'SELECT COALESCE(SUM(amount), 0) as total_spent FROM transactions WHERE user_id = ? AND status = ?'
-        ).get(userId, 'approved');
+        const monthlyEstimate = estimateAgg[0]?.monthly_estimate || 0;
 
-        // Total blocked (blocked + limit_exceeded)
-        const blockedRow = db.prepare(
-            "SELECT COALESCE(SUM(amount), 0) as total_blocked, COUNT(*) as blocked_count FROM transactions WHERE user_id = ? AND status IN ('blocked', 'limit_exceeded')"
-        ).get(userId);
-
-        // Monthly active subscription cost estimate (sum of last approved charge per active card)
-        const monthlyEstimate = db.prepare(`
-            SELECT COALESCE(SUM(latest_charge), 0) as monthly_estimate FROM (
-                SELECT MAX(t.amount) as latest_charge
-                FROM virtual_cards vc
-                JOIN transactions t ON t.card_id = vc.id AND t.status = 'approved'
-                WHERE vc.user_id = ? AND vc.status = 'active'
-                GROUP BY vc.id
-            )
-        `).get(userId);
-
-        // User balance
-        const user = db.prepare('SELECT main_balance FROM users WHERE id = ?').get(userId);
-
-        // Unread notifications count
-        const unread_count_row = db.prepare(
-            'SELECT COUNT(*) as unread_count FROM notifications WHERE user_id = ? AND is_read = 0'
-        ).get(userId);
-        const unread_count = unread_count_row ? unread_count_row.unread_count : 0;
+        const user = await db.collection('users').findOne({ _id: userId });
 
         res.json({
             active_cards,
             total_cards,
             paused_cards,
             revoked_cards,
-            total_spent: spentRow.total_spent,
-            total_blocked: blockedRow.total_blocked,
-            blocked_count: blockedRow.blocked_count,
-            monthly_estimate: monthlyEstimate.monthly_estimate,
+            total_spent: spendStats.total_spent,
+            total_blocked: spendStats.total_blocked,
+            blocked_count: spendStats.blocked_count,
+            monthly_estimate: monthlyEstimate,
             main_balance: user ? user.main_balance : 0,
             unread_notifications: unread_count,
         });
@@ -84,25 +85,44 @@ router.get('/summary', (req, res) => {
 });
 
 // GET /api/analytics/monthly — spending trend (last 6 months)
-router.get('/monthly', (req, res) => {
+router.get('/monthly', async (req, res) => {
     try {
         const db = getDb();
-        const userId = req.user.id;
+        const userId = new ObjectId(req.user.id);
 
-        const months = db.prepare(`
-            SELECT 
-                strftime('%Y-%m', created_at) as month,
-                SUM(CASE WHEN status = 'approved' THEN amount ELSE 0 END) as spent,
-                SUM(CASE WHEN status IN ('blocked', 'limit_exceeded') THEN amount ELSE 0 END) as blocked,
-                COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count,
-                COUNT(CASE WHEN status IN ('blocked', 'limit_exceeded') THEN 1 END) as blocked_count
-            FROM transactions
-            WHERE user_id = ? AND created_at >= date('now', '-6 months')
-            GROUP BY strftime('%Y-%m', created_at)
-            ORDER BY month ASC
-        `).all(userId);
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-        res.json({ months });
+        const monthsAgg = await db.collection('transactions').aggregate([
+            {
+                $match: {
+                    user_id: userId,
+                    created_at: { $gte: sixMonthsAgo.toISOString() }
+                }
+            },
+            {
+                $group: {
+                    _id: { $substr: ['$created_at', 0, 7] },
+                    spent: { $sum: { $cond: [{ $eq: ['$status', 'approved'] }, '$amount', 0] } },
+                    blocked: { $sum: { $cond: [{ $in: ['$status', ['blocked', 'limit_exceeded']] }, '$amount', 0] } },
+                    approved_count: { $sum: { $cond: [{ $eq: ['$status', 'approved'] }, 1, 0] } },
+                    blocked_count: { $sum: { $cond: [{ $in: ['$status', ['blocked', 'limit_exceeded']] }, 1, 0] } }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    month: '$_id',
+                    spent: 1,
+                    blocked: 1,
+                    approved_count: 1,
+                    blocked_count: 1
+                }
+            },
+            { $sort: { month: 1 } }
+        ]).toArray();
+
+        res.json({ months: monthsAgg });
     } catch (err) {
         console.error('[Analytics] Monthly error:', err);
         res.status(500).json({ error: 'Internal server error' });
@@ -110,27 +130,65 @@ router.get('/monthly', (req, res) => {
 });
 
 // GET /api/analytics/by-merchant — spending breakdown by merchant
-router.get('/by-merchant', (req, res) => {
+router.get('/by-merchant', async (req, res) => {
     try {
         const db = getDb();
-        const userId = req.user.id;
+        const userId = new ObjectId(req.user.id);
 
-        const merchants = db.prepare(`
-            SELECT 
-                vc.merchant_name,
-                vc.merchant_category,
-                vc.status as card_status,
-                COALESCE(SUM(CASE WHEN t.status = 'approved' THEN t.amount ELSE 0 END), 0) as total_spent,
-                COUNT(CASE WHEN t.status = 'approved' THEN 1 END) as approved_charges,
-                COUNT(CASE WHEN t.status IN ('blocked', 'limit_exceeded') THEN 1 END) as blocked_charges
-            FROM virtual_cards vc
-            LEFT JOIN transactions t ON t.card_id = vc.id
-            WHERE vc.user_id = ?
-            GROUP BY vc.id
-            ORDER BY total_spent DESC
-        `).all(userId);
+        const merchantsAgg = await db.collection('virtual_cards').aggregate([
+            { $match: { user_id: userId } },
+            {
+                $lookup: {
+                    from: 'transactions',
+                    localField: '_id',
+                    foreignField: 'card_id',
+                    as: 'txs'
+                }
+            },
+            {
+                $project: {
+                    merchant_name: 1,
+                    merchant_category: 1,
+                    card_status: '$status',
+                    total_spent: {
+                        $sum: {
+                            $map: {
+                                input: {
+                                    $filter: {
+                                        input: '$txs',
+                                        as: 'tx',
+                                        cond: { $eq: ['$$tx.status', 'approved'] }
+                                    }
+                                },
+                                as: 'tx',
+                                in: '$$tx.amount'
+                            }
+                        }
+                    },
+                    approved_charges: {
+                        $size: {
+                            $filter: {
+                                input: '$txs',
+                                as: 'tx',
+                                cond: { $eq: ['$$tx.status', 'approved'] }
+                            }
+                        }
+                    },
+                    blocked_charges: {
+                        $size: {
+                            $filter: {
+                                input: '$txs',
+                                as: 'tx',
+                                cond: { $in: ['$$tx.status', ['blocked', 'limit_exceeded']] }
+                            }
+                        }
+                    }
+                }
+            },
+            { $sort: { total_spent: -1 } }
+        ]).toArray();
 
-        res.json({ merchants });
+        res.json({ merchants: merchantsAgg });
     } catch (err) {
         console.error('[Analytics] By-merchant error:', err);
         res.status(500).json({ error: 'Internal server error' });

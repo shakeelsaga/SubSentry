@@ -1,31 +1,39 @@
 import express from 'express';
+import { ObjectId } from 'mongodb';
 import { getDb } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 router.use(authenticate);
 
+function sanitizeNotification(notif) {
+    if (!notif) return notif;
+    const { _id, user_id, ...rest } = notif;
+    return { id: _id.toString(), user_id: user_id.toString(), ...rest };
+}
+
 // GET /api/notifications — list user notifications
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const db = getDb();
         const { unread_only } = req.query;
+        const userId = new ObjectId(req.user.id);
 
-        let query = 'SELECT * FROM notifications WHERE user_id = ?';
-        const params = [req.user.id];
+        const filter = { user_id: userId };
 
         if (unread_only === 'true') {
-            query += ' AND is_read = 0';
+            filter.is_read = 0;
         }
 
-        query += ' ORDER BY created_at DESC LIMIT 50';
+        const notifications = await db.collection('notifications')
+            .find(filter)
+            .sort({ created_at: -1 })
+            .limit(50)
+            .toArray();
 
-        const notifications = db.prepare(query).all(...params);
+        const count = await db.collection('notifications').countDocuments({ user_id: userId, is_read: 0 });
 
-        const count_row = db.prepare('SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0').get(req.user.id);
-        const count = count_row ? count_row.count : 0;
-
-        res.json({ notifications, unread_count: count });
+        res.json({ notifications: notifications.map(sanitizeNotification), unread_count: count });
     } catch (err) {
         console.error('[Notifications] List error:', err);
         res.status(500).json({ error: 'Internal server error' });
@@ -33,10 +41,13 @@ router.get('/', (req, res) => {
 });
 
 // PATCH /api/notifications/:id/read — mark notification as read
-router.patch('/:id/read', (req, res) => {
+router.patch('/:id/read', async (req, res) => {
     try {
         const db = getDb();
-        db.prepare('UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
+        await db.collection('notifications').updateOne(
+            { _id: new ObjectId(req.params.id), user_id: new ObjectId(req.user.id) },
+            { $set: { is_read: 1 } }
+        );
         res.json({ message: 'Notification marked as read' });
     } catch (err) {
         console.error('[Notifications] Read error:', err);
@@ -45,10 +56,13 @@ router.patch('/:id/read', (req, res) => {
 });
 
 // PATCH /api/notifications/read-all — mark all as read
-router.patch('/read-all', (req, res) => {
+router.patch('/read-all', async (req, res) => {
     try {
         const db = getDb();
-        db.prepare('UPDATE notifications SET is_read = 1 WHERE user_id = ?').run(req.user.id);
+        await db.collection('notifications').updateMany(
+            { user_id: new ObjectId(req.user.id) },
+            { $set: { is_read: 1 } }
+        );
         res.json({ message: 'All notifications marked as read' });
     } catch (err) {
         console.error('[Notifications] Read all error:', err);
