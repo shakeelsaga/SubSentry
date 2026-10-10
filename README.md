@@ -1,5 +1,10 @@
 # SubSentry
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-success?style=for-the-badge&logo=render)](https://subsentry-9sjl.onrender.com/)
+
+### Link: [**Try the live demo →**](https://subsentry-9sjl.onrender.com/)
+*Deployed on Render. If it has been idle for a while, the first load may take a moment to wake up.*
+
 SubSentry is a working prototype for subscription control through virtual cards. It lets a user create Luhn-valid card numbers, lock each card to a merchant, set spend limits, add burn dates, simulate charges, and review the transaction trail produced by those rules.
 
 The cards in this project are simulated. They are useful for demonstrating the control flow of a card firewall, but they are not connected to Visa, Mastercard, Stripe Issuing, Marqeta, or any other payment network.
