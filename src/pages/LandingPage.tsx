@@ -848,10 +848,15 @@ function LandingFooter() {
           </div>
 
           {/* GitHub status */}
-          <div className="flex items-center gap-2 text-on-surface-variant font-display text-xs uppercase tracking-widest font-bold">
+          <a
+            href="https://github.com/shakeelsaga/SubSentry"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 text-on-surface-variant font-display text-xs uppercase tracking-widest font-bold transition-colors hover:text-primary-container"
+          >
             <Github className="w-5 h-5" />
-            GitHub Repo Pending
-          </div>
+            View on GitHub
+          </a>
         </div>
 
         {/* Bottom bar */}
